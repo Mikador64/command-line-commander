@@ -1,0 +1,7 @@
+[
+	'Test Commands',
+	{ title=>'list', cmd=>'ls -lha'  },
+	{ title=>'sys info', cmd=>'neofetch'  },
+	{ title=>'drive info', cmd=>'df -h /'  },
+	{ title=>'perl test', cmd=>'perl -E \'say q|hi!|;\''  },
+]

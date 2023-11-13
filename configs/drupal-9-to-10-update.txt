@@ -1,0 +1,52 @@
+[
+  'Drupal 9 to 10 Update',
+  {
+    'cmd' => 'chmod -v 777 web/sites/default',
+    'title' => 'chmod 777 sites/default'
+  },
+  {
+    'cmd' => 'chmod -v 666 web/sites/default/*settings.php',
+    'title' => 'chmod 666 *settings.php'
+  },
+  {
+    'cmd' => 'chmod -v 666 web/sites/default/*services.yml',
+    'title' => 'chmod 666 *services.yml'
+  },
+  {
+    'cmd' => 'composer require drupal/core-recommended:^10 --no-update',
+    'title' => 'Composer require core v10'
+  },
+  {
+    'cmd' => 'composer require drupal/core-composer-scaffold:^10 --no-update',
+    'title' => 'Composer require scaffold v10'
+  },
+  {
+    'cmd' => 'composer require drupal/core-project-message:^10 --no-update',
+    'title' => 'Composer require project-message v10'
+  },
+  {
+    'cmd' => 'composer require \'drupal/core-dev:^10\' --dev --no-update',
+    'title' => 'Composer require 10 dev'
+  },
+  {
+    'cmd' => 'composer require \'drush/drush:^12\' --no-update',
+    'title' => 'Composer require drush version 12'
+  },
+  {
+    'cmd' => 'composer update',
+    'title' => 'Run composer update'
+  },
+  {
+    'cmd' => 'chmod 755 web/sites/default',
+    'title' => 'chmod 755 sites/default'
+  },
+  {
+    'cmd' => 'chmod 644 web/sites/default/*settings.php',
+    'title' => 'chmod 644 *settings.php'
+  },
+  {
+    'cmd' => 'chmod 644 web/sites/default/*services.yml',
+    'title' => 'chmod 644 *services.yml'
+  }
+]
+
