@@ -1,15 +1,30 @@
-#!/usr/bin/env perl -i.bak -0777 -p
+#!/usr/bin/perl -i.bak -0777 -p
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ PRAGMAS
 
 use feature qw|say|;
 use Cwd;
 use Term::ANSIColor qw|:constants|;
 
-BEGIN { push @ARGV, $ENV{'HOME'}.'/.bashrc'; }
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ BEGIN
+
+BEGIN
+{
+    push @ARGV, $ENV{'HOME'}.'/.bashrc';
+}
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ INIT
 
 $dir = getcwd();
 
-$_.=qq|export PATH=$dir:\$PATH\n|;
+$_.=qq|export PATH=${dir}:\$PATH\n|;
+$_.=qq|alias clc="${dir}/clc.pl"\n|;
 
-END { say q|> |, UNDERLINE GREEN $dir, RESET q| added to .bashrc $PATH|; }
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ END
+
+END
+{
+    say q|> |, UNDERLINE GREEN $dir, RESET q| added to .bashrc $PATH|;
+}
 
 
