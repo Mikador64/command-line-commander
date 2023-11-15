@@ -147,16 +147,17 @@ sub pressEnter
     <STDIN>;
 }
 
-sub continueCMD($)
+sub continueCMD($$)
 {
-    my $cmd = shift;
+    my $cmd   = shift;
+    my $regex = shift;
 
     cmdMenu();
 
     typeWriter('> Choice ~> ');
     chomp(my $choice = <STDIN>);
 
-    system $cmd if $choice =~ m~^R$~i;
+    runCmd($cmd, $regex) if $choice =~ m~^R$~i;
 
     if ($choice =~ m~^M$|^$~i)
     {
@@ -194,7 +195,7 @@ sub autoCmds
         typeWriter($cmd, 1);
         sleep 3;
         print RESET;
-        system $cmd;
+        runCmd($cmd,$$data[$key]{regex});
     }
 
     pressEnter()
@@ -219,7 +220,7 @@ sub gotoCmds
         my $cmd = $$data[$choice]{cmd};
         typeWriter($cmd,1);
         print RESET;
-        continueCMD($cmd);
+        continueCMD($cmd,$$data[$choice]{regex});
     }
     else
     {
@@ -227,6 +228,28 @@ sub gotoCmds
     }
 
    pressEnter();
+}
+
+sub runCmd($$)
+{
+    my $cmd   = shift;
+    my $regex = shift;
+
+    say $regex;
+
+    if ($regex && -f $regex)
+    {
+        open my $fh, '<', $regex or quitNow(q|Can't open regex file|);
+
+        while (<$fh>)
+        {
+            chomp;
+            my $reRun = qq|\$cmd =~ ${_};|;
+            eval $reRun;
+        }
+    }
+
+    system $cmd;
 }
 
 # on screen typewriter effect

@@ -41,27 +41,29 @@ if (scalar @ARGV == 1)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ INIT
 
-while (my $line = read_line())
+LOOP:
 {
-    next if $line =~ m~^$~;
-    next if $line =~ m~^#~;
+    $_ = read_line();
+    chomp $_;
+    last LOOP unless $_;
+    # next LOOP if m~^$~;
+    # next LOOP if m~^#~;
 
-    chomp $line;
-
-    if ($n == 0)
+    if (m~^>\s+(.*)$~)
     {
-        $$data[$n] = $line;
+        $$data[$n] = $1;
     }
-    else
+    elsif(m~^(title)=(.*)$~i)
     {
-        $$data[$n] =
-        {
-            title => ${[ split m`>>>`, $line ]}[0],
-            cmd   => ${[ split m`>>>`, $line ]}[1]
-        };
+       $n++;
+       $$data[$n]{$1} = $2;
+    }
+    elsif(m~^(regex|cmd)=(.*)$~i)
+    {
+        $$data[$n]{$1} = $2;
     }
 
-    $n++;
+    goto LOOP;
 }
 
 say Dumper $data;
@@ -74,7 +76,13 @@ sub read_line
     return <DATA>;
 }
 
-
 # ║
 __END__
-
+> Test
+# List Test
+title=List Folders
+cmd=ls -lha *.EXT
+regex=./regex.txt
+# DF Test
+title=Test DF
+cmd=df -h /
