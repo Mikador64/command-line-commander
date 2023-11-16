@@ -24,8 +24,15 @@ $Data::Dumper::Terse	= 1;  # avoids $VAR1 = at the beginning of the dump
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ GLOBALS
 
-my $data = [];
 $|++;
+my $data = [];
+my $clc  = bless
+{
+    title => '',
+    cmd   => '',
+    regex => '',
+
+}, 'clc';
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ INPUT
 
@@ -53,9 +60,6 @@ typeWriter('~'x45, 1);
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ INIT
 
-$new = Dumper $data;
-my $multi = eval $new;
-
 MENU:
 {
     listCmds();
@@ -65,7 +69,13 @@ MENU:
     chomp(my $choice = <STDIN>);
 
     gotoCmds() if $choice =~ m~^G$~i;
-    exit       if $choice =~ m~^Q$~i;
+
+    if ($choice =~ m~^Q$~i)
+    {
+        print RESET;
+        typeWriter('> ');
+        quitNow('Bye bye time!');
+    }
 
     if ($choice == 1)
     {
@@ -85,86 +95,7 @@ MENU:
     goto MENU;
 }
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SUBS
-
-sub quitNow($)
-{
-    my $quit = shift;
-    print RED BOLD;
-    typeWriter($quit, 1);
-    print RESET;
-    exit 1;
-}
-
-# clear screen
-sub clearScreen()
-{
-    # Clears the entire screen
-    print "\033[2J";
-    # Moves the cursor to the top left corner
-    print "\033[0;0H";
-}
-
-# main menu
-sub mainMenu()
-{
-    print YELLOW BOLD;
-    typeWriter('#)');
-    print RESET;
-    typeWriter(' automatic start at postion ',1);
-    print YELLOW BOLD;
-    typeWriter('g)');
-    print RESET;
-    typeWriter(' goto command  ');
-    print YELLOW BOLD;
-    typeWriter('q)');
-    print RESET;
-    typeWriter(' quit', 1);
-    typeWriter('~'x45, 1);
-}
-
-# main menu
-sub cmdMenu()
-{
-    print YELLOW BOLD;
-    typeWriter('r)');
-    print RESET;
-    typeWriter(' run command ');
-    print YELLOW BOLD;
-    typeWriter('m)');
-    print RESET;
-    typeWriter(' back to menu', 1);
-    typeWriter('~'x45, 1);
-}
-
-# press enter
-sub pressEnter
-{
-
-    print YELLOW;
-    typeWriter('> Press enter to continue...'),
-    print RESET;
-    <STDIN>;
-}
-
-sub continueCMD($$)
-{
-    my $cmd   = shift;
-    my $regex = shift;
-
-    cmdMenu();
-
-    typeWriter('> Choice ~> ');
-    chomp(my $choice = <STDIN>);
-
-    runCmd($cmd, $regex) if $choice =~ m~^R$~i;
-
-    if ($choice =~ m~^M$|^$~i)
-    {
-        clearScreen();
-        goto MENU;
-    }
-}
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SUB-LIST-CMDS
 
 sub listCmds
 {
@@ -172,15 +103,18 @@ sub listCmds
     for my $key (keys @{$data})
     {
         next if $key == 0;
-        my $cmd = sprintf "%-2d -- %s", $key, $$data[$key]{title};
-        typeWriter($cmd, 1);
+        printf "%-2d -- %s\n", $key, $$data[$key]{title};
     }
 }
 
-sub autoCmds
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SUB-AUTO-CMDS
+
+sub autoCmds($)
 {
     my $start = shift;
-    my $cmd;
+
+    $$cli{cmd}   = '';
+    $$cli{regex} = '';
 
     $start = 0 unless $start;
 
@@ -188,22 +122,23 @@ sub autoCmds
     {
         next if $key == 0;
         next if $key < $start;
-        print RESET;
-        typeWriter('> ');
-        print GREEN BOLD UNDERLINE;
-        $cmd = $$data[$key]{cmd};
-        typeWriter($cmd, 1);
-        sleep 3;
-        print RESET;
-        runCmd($cmd,$$data[$key]{regex});
+
+        $$cli{cmd}   = $$data[$key]{cmd};
+        $$cli{regex} = $$data[$choice]{regex} if $$data[$choice]{regex};
+
+        runCmd(3);
     }
 
     pressEnter()
 }
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SUB-GOTO-CMD
+
 sub gotoCmds
 {
-    my $cmd;
+    $$cli{cmd}   = '';
+    $$cli{regex} = '';
+
     my $loc  = 1;
     COMMAND: typeWriter('> Which command? ~> ');
     chomp(my $choice = <STDIN>);
@@ -216,47 +151,120 @@ sub gotoCmds
 
     if ($$data[$choice])
     {
-        print GREEN;
-        my $cmd = $$data[$choice]{cmd};
-        typeWriter($cmd,1);
-        print RESET;
-        continueCMD($cmd,$$data[$choice]{regex});
+        $$cli{cmd}   = $$data[$choice]{cmd};
+        $$cli{regex} = $$data[$choice]{regex} if $$data[$choice]{regex};
+
+        runCmd(3);
+        pressEnter();
+        clearScreen();
+        listCmds();
+        borderMenu();
+        goto COMMAND;
     }
     else
     {
         goto COMMAND;
     }
 
-   pressEnter();
 }
 
-sub runCmd($$)
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SUB-RUN-CMD
+
+sub runCmd()
 {
-    my $cmd   = shift;
-    my $regex = shift;
+    my $sleep = shift // 0;
 
-    say $regex;
-
-    if ($regex && -f $regex)
+    if ($$clc{regex} && -f $$clc{regex})
     {
-        open my $fh, '<', $regex or quitNow(q|Can't open regex file|);
+        open my $fh, '<', $$clc{regex} or quitNow(qq|Missing regex file: <$$clc{regex}> so quitting!|);
 
         while (<$fh>)
         {
             chomp;
+            next if m`^$|^#`;
             my $reRun = qq|\$cmd =~ ${_};|;
             eval $reRun;
         }
     }
 
-    system $cmd;
+    print RESET;
+    typeWriter('> ');
+    print BOLD GREEN UNDERLINE;
+    typeWriter($$cli{cmd},1);
+    print RESET;
+
+    sleep $sleep;
+
+    system $$cli{cmd};
+
+    $$cli{cmd}   = '';
+    $$clc{regex} = '';
+}
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SUB-MENUS
+
+# main menu
+sub mainMenu
+{
+    print YELLOW BOLD;
+    typeWriter('#)');
+    print RESET;
+    typeWriter(' Automatic start at postion ',1);
+    print YELLOW BOLD;
+    typeWriter('g)');
+    print RESET;
+    typeWriter(' Goto command  ');
+    print YELLOW BOLD;
+    typeWriter('q)');
+    print RESET;
+    typeWriter(' Quit', 1);
+    typeWriter('~'x45, 1);
+}
+
+# border menu
+sub borderMenu()
+{
+    typeWriter('~'x45, 1);
+}
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SUB-QUIT
+
+sub quitNow($)
+{
+    my $quit = shift;
+    print RED BOLD;
+    typeWriter($quit, 1);
+    print RESET;
+    exit 1;
+}
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SUB-SCREEN-FX
+
+# clear screen
+sub clearScreen
+{
+    # Clears the entire screen
+    print "\033[2J";
+    # Moves the cursor to the top left corner
+    print "\033[0;0H";
+}
+
+# press enter
+sub pressEnter
+{
+    print YELLOW;
+    typeWriter('> Press enter to continue...'),
+    print RESET;
+    <STDIN>;
 }
 
 # on screen typewriter effect
 sub typeWriter($)
 {
-	shift =~ s`.`select(undef, undef, undef, rand(0.021)); print $&`ger;
-	say '' if shift;
+    shift =~ s`.`select(undef, undef, undef, rand(0.021)); print $&`ger;
+    say '' if shift;
 }
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ END
 
 __END__
