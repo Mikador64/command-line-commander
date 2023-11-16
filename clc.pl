@@ -38,6 +38,8 @@ my $clc  = bless
 
 unless (scalar @ARGV == 1 and -f $ARGV[0])
 {
+    print RESET;
+    typeWriter('> ');
     quitNow('No config file so quitting!');
 }
 
