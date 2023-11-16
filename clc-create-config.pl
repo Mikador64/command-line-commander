@@ -45,7 +45,7 @@ LOOP:
 {
     $_ = read_line();
     chomp $_;
-    last LOOP unless $_;
+    last LOOP unless defined $_;
     # next LOOP if m~^$~;
     # next LOOP if m~^#~;
 

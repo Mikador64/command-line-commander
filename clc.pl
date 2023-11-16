@@ -31,6 +31,7 @@ my $clc  = bless
     title => '',
     cmd   => '',
     regex => '',
+    preview => 0,
 
 }, 'clc';
 
@@ -53,24 +54,26 @@ my $aboutEmail = 'By: Mikador64.com';
 
 clearScreen();
 # display author flare
+borderMenu();
 print GREEN BOLD;
 typeWriter($aboutName, 1);
 typeWriter($aboutEmail, 1);
 typeWriter('['.$$data[0].']', 1);
 print RESET;
-typeWriter('~'x45, 1);
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ INIT
 
 MENU:
 {
+    borderMenu();
     listCmds();
-    say '';
+    borderMenu();
     mainMenu();
     typeWriter('> Choice ~> ');
     chomp(my $choice = <STDIN>);
 
     gotoCmds() if $choice =~ m~^G$~i;
+
 
     if ($choice =~ m~^Q$~i)
     {
@@ -79,11 +82,16 @@ MENU:
         quitNow('Bye bye time!');
     }
 
-    if ($choice == 1)
+    if ($choice == 0)
+    {
+        clearScreen();
+        goto MENU;
+    }
+    elsif ($choice == 1)
     {
          autoCmds(1);
     }
-    elsif ($choice =~ m~^\d+$~ && $choice > 1)
+    elsif ($choice =~ m~^\d+$~ && $$data[$choice] && $choice > 1)
     {
         autoCmds($choice);
     }
@@ -115,8 +123,9 @@ sub autoCmds($)
 {
     my $start = shift;
 
-    $$cli{cmd}   = '';
-    $$cli{regex} = '';
+    $$clc{cmd}   = '';
+    $$clc{regex} = '';
+    $$clc{preview} = 0;
 
     $start = 0 unless $start;
 
@@ -125,8 +134,8 @@ sub autoCmds($)
         next if $key == 0;
         next if $key < $start;
 
-        $$cli{cmd}   = $$data[$key]{cmd};
-        $$cli{regex} = $$data[$choice]{regex} if $$data[$choice]{regex};
+        $$clc{cmd}   = $$data[$key]{cmd};
+        $$clc{regex} = $$data[$key]{regex} if $$data[$key]{regex};
 
         runCmd(3);
     }
@@ -138,34 +147,37 @@ sub autoCmds($)
 
 sub gotoCmds
 {
-    $$cli{cmd}   = '';
-    $$cli{regex} = '';
+    $$clc{cmd}   = '';
+    $$clc{regex} = '';
+    $$clc{preview} = 1;
 
-    my $loc  = 1;
-    COMMAND: typeWriter('> Which command? ~> ');
-    chomp(my $choice = <STDIN>);
-
-    if ($choice =~ m~Q|^$~i)
+    COMMAND:
     {
-        clearScreen();
-        goto MENU;
-    }
+        typeWriter('> Which command? ~> ');
+        chomp(my $choice = <STDIN>);
 
-    if ($$data[$choice])
-    {
-        $$cli{cmd}   = $$data[$choice]{cmd};
-        $$cli{regex} = $$data[$choice]{regex} if $$data[$choice]{regex};
+        if ($choice =~ m~Q|^$~i)
+        {
+            clearScreen();
+            goto MENU;
+        }
 
-        runCmd(3);
-        pressEnter();
-        clearScreen();
-        listCmds();
-        borderMenu();
-        goto COMMAND;
-    }
-    else
-    {
-        goto COMMAND;
+        if ($$data[$choice])
+        {
+            $$clc{cmd}   = $$data[$choice]{cmd};
+            $$clc{regex} = $$data[$choice]{regex} if $$data[$choice]{regex};
+
+            runCmd(3);
+            pressEnter();
+            clearScreen();
+            listCmds();
+            borderMenu();
+            goto COMMAND;
+        }
+        else
+        {
+            goto COMMAND;
+        }
     }
 
 }
@@ -176,31 +188,36 @@ sub runCmd()
 {
     my $sleep = shift // 0;
 
-    if ($$clc{regex} && -f $$clc{regex})
+    if ($$clc{regex})
     {
-        open my $fh, '<', $$clc{regex} or quitNow(qq|Missing regex file: <$$clc{regex}> so quitting!|);
+        my $homeDir = glob('~');
+        my $config = $$clc{regex} =~ s`~`$homeDir`r;
 
-        while (<$fh>)
+        if (-f $config)
         {
-            chomp;
-            next if m`^$|^#`;
-            my $reRun = qq|\$cmd =~ ${_};|;
-            eval $reRun;
+            open my $fh, '<', $config or quitNow(qq|Missing regex file: <${config}> so quitting!|);
+
+            while (<$fh>)
+            {
+                chomp;
+                next if m`^$|^#`;
+                my $reRun = qq|\$\$clc{cmd} =~ ${_};|;
+                eval $reRun;
+            }
         }
     }
 
     print RESET;
     typeWriter('> ');
-    print BOLD GREEN UNDERLINE;
-    typeWriter($$cli{cmd},1);
+    print BOLD GREEN;
+    typeWriter($$clc{cmd},1);
     print RESET;
+
+    continueCmd() if $$clc{preview} == 1;
 
     sleep $sleep;
 
-    system $$cli{cmd};
-
-    $$cli{cmd}   = '';
-    $$clc{regex} = '';
+    system $$clc{cmd};
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SUB-MENUS
@@ -213,20 +230,20 @@ sub mainMenu
     print RESET;
     typeWriter(' Automatic start at postion ',1);
     print YELLOW BOLD;
-    typeWriter('g)');
+    typeWriter('G)');
     print RESET;
     typeWriter(' Goto command  ');
     print YELLOW BOLD;
-    typeWriter('q)');
+    typeWriter('Q)');
     print RESET;
     typeWriter(' Quit', 1);
-    typeWriter('~'x45, 1);
+    borderMenu()
 }
 
 # border menu
 sub borderMenu()
 {
-    typeWriter('~'x45, 1);
+    say '─'x70;
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SUB-QUIT
@@ -258,6 +275,40 @@ sub pressEnter
     typeWriter('> Press enter to continue...'),
     print RESET;
     <STDIN>;
+}
+
+# Pause command
+sub continueCmd
+{
+    borderMenu();
+    print YELLOW BOLD;
+    typeWriter('C)');
+    print RESET;
+    typeWriter(' Run command ');
+    print YELLOW BOLD;
+    typeWriter('G)');
+    print RESET;
+    typeWriter(' Goto command menu  ',1);
+    print YELLOW BOLD;
+    typeWriter('M)');
+    print RESET;
+    typeWriter(' Quit to main menu',1);
+    borderMenu();
+
+    print q|> Choice ~> |;
+    chomp (my $choice = <STDIN>);
+    if ($choice =~ m~^M$~i)
+    {
+        clearScreen();
+        goto MENU;
+    }
+    elsif ($choice =~ m~^G$~i)
+    {
+        clearScreen();
+        listCmds();
+        borderMenu();
+        goto COMMAND;
+    }
 }
 
 # on screen typewriter effect
