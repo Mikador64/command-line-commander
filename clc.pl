@@ -8,8 +8,8 @@
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ PRAGMAS
 
-use feature qw|say|;
-use Term::ANSIColor qw(:constants);
+use Term::ANSIColor qw|:constants|;
+use feature qw|say state|;
 use Data::Dumper;
 
 # use JSON::XS;
@@ -44,9 +44,12 @@ unless (scalar @ARGV == 1 and -f $ARGV[0])
     quitNow('No config file so quitting!');
 }
 
-$data = eval(join('', <>));
+quitNow(q|Can't create $data structure so bailing! :(|)
+unless overmind('eval-data',join('', <>));
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CREDITS
+
+my $data = overmind('get-data');
 
 # author info
 my $aboutName  = 'Command Line Manager';
@@ -105,11 +108,69 @@ MENU:
     goto MENU;
 }
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SUB-OVERMIND
+
+sub overmind
+{
+   # ~~~~~~~~~~~~~~~ STATE
+
+    state $data = 'placeholder';
+    state $clc  = bless
+    {
+        title => '',
+        cmd   => '',
+        regex => '',
+        preview => 0,
+
+    }, 'clc';
+
+    # ~~~~~~~~~~~~~~~ DO
+
+    my $do  = shift;
+    my $var = shift;
+
+    if ($do eq 'eval-data')
+    {
+        $data = eval $var;
+        return 1;
+    }
+    elsif ($do eq 'get-data')
+    {
+        return $data;
+    }
+    elsif ($do eq 'set-clc')
+    {
+        $$clc{title}   = $$var{title}   // $$clc{title};
+        $$clc{cmd}     = $$var{cmd}     // $$clc{cmd};
+        $$clc{regex}   = $$var{regex}   // $$clc{regex};
+        $$clc{preview} = $$var{preview} // $$clc{preview};
+
+        return 1;
+    }
+    elsif ($do eq 'get-clc')
+    {
+        return $clc;
+    }
+    elsif ($do eq 'reset-clc')
+    {
+        $clc =
+        {
+            title => '',
+            cmd   => '',
+            regex => '',
+            preview => 0
+        };
+
+        return 1;
+    }
+}
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SUB-LIST-CMDS
 
 sub listCmds
 {
-    my $cmd;
+    my $data = overmind('get-data');
+
     for my $key (keys @{$data})
     {
         next if $key == 0;
@@ -122,10 +183,10 @@ sub listCmds
 sub autoCmds($)
 {
     my $start = shift;
+    my $data = overmind('get-data');
 
-    $$clc{cmd}   = '';
-    $$clc{regex} = '';
-    $$clc{preview} = 0;
+    overmind('reset-clc');
+    my $clc = overmind('get-clc');
 
     $start = 0 unless $start;
 
@@ -147,9 +208,11 @@ sub autoCmds($)
 
 sub gotoCmds
 {
-    $$clc{cmd}   = '';
-    $$clc{regex} = '';
-    $$clc{preview} = 1;
+    overmind('reset-clc');
+    overmind('set-clc', { preview => 1 } );
+
+    my $clc  = overmind('get-clc');
+    my $data = overmind('get-data');
 
     COMMAND:
     {
@@ -182,11 +245,33 @@ sub gotoCmds
 
 }
 
+# Pause command
+sub continueCmd
+{
+    continueMenu();
+
+    print q|> Choice ~> |;
+    chomp (my $choice = <STDIN>);
+    if ($choice =~ m~^M$~i)
+    {
+        clearScreen();
+        goto MENU;
+    }
+    elsif ($choice =~ m~^G$~i)
+    {
+        clearScreen();
+        listCmds();
+        borderMenu();
+        goto COMMAND;
+    }
+}
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SUB-RUN-CMD
 
 sub runCmd()
 {
     my $sleep = shift // 0;
+    my $clc   = overmind('get-clc');
 
     if ($$clc{regex})
     {
@@ -240,6 +325,24 @@ sub mainMenu
     borderMenu()
 }
 
+sub continueMenu
+{
+    borderMenu();
+    print YELLOW BOLD;
+    typeWriter('C)');
+    print RESET;
+    typeWriter(' Run command ');
+    print YELLOW BOLD;
+    typeWriter('G)');
+    print RESET;
+    typeWriter(' Goto command menu  ',1);
+    print YELLOW BOLD;
+    typeWriter('M)');
+    print RESET;
+    typeWriter(' Quit to main menu',1);
+    borderMenu();
+}
+
 # border menu
 sub borderMenu()
 {
@@ -275,40 +378,6 @@ sub pressEnter
     typeWriter('> Press enter to continue...'),
     print RESET;
     <STDIN>;
-}
-
-# Pause command
-sub continueCmd
-{
-    borderMenu();
-    print YELLOW BOLD;
-    typeWriter('C)');
-    print RESET;
-    typeWriter(' Run command ');
-    print YELLOW BOLD;
-    typeWriter('G)');
-    print RESET;
-    typeWriter(' Goto command menu  ',1);
-    print YELLOW BOLD;
-    typeWriter('M)');
-    print RESET;
-    typeWriter(' Quit to main menu',1);
-    borderMenu();
-
-    print q|> Choice ~> |;
-    chomp (my $choice = <STDIN>);
-    if ($choice =~ m~^M$~i)
-    {
-        clearScreen();
-        goto MENU;
-    }
-    elsif ($choice =~ m~^G$~i)
-    {
-        clearScreen();
-        listCmds();
-        borderMenu();
-        goto COMMAND;
-    }
 }
 
 # on screen typewriter effect
