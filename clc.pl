@@ -15,10 +15,15 @@ use Data::Dumper;
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CONFIG
 
 # configure Data::Dumper for prettier output
-$Data::Dumper::Purity   = 1;  # to ensure the dumped data remains valid Perl code
-$Data::Dumper::Indent   = 1;  # use a readable (indented) style
-$Data::Dumper::Sortkeys = 1;  # sort harsh keys
-$Data::Dumper::Terse	= 1;  # avoids $VAR1 = at the beginning of the dump
+
+# to ensure the dumped data remains valid perl code
+$Data::Dumper::Purity   = 1;
+# use a readable (indented) style
+$Data::Dumper::Indent   = 1;
+# sort harsh keys
+$Data::Dumper::Sortkeys = 1;
+# avoids $VAR1 = at the beginning of the dump
+$Data::Dumper::Terse	= 1;
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ GLOBALS
 
@@ -26,37 +31,47 @@ $|++;
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ INPUT
 
-unless (scalar @ARGV == 1 and -f $ARGV[0])
+ARGS:
 {
-    print RESET;
-    typeWriter('> ');
-    quitNow('No config file so quitting!');
-}
+    unless (scalar @ARGV == 1 and -f $ARGV[0])
+    {
+        print RESET;
+        typeWriter('> ');
+        quitNow('No config file so quitting!');
+    }
 
-quitNow(q|Can't create $data structure so bailing! :(|)
-unless overmind('eval-data',join('', <>));
+    unless (overmind('eval-data',join('', <>)))
+    {
+        quitNow(q|Can't create $data structure so bailing! :(|)
+    }
+}
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CREDITS
 
-my $data = overmind('get-data');
+AUTHOR:
+{
+    my $data = overmind('get-data');
 
-# author info
-my $aboutName  = 'Command Line Manager';
-my $aboutEmail = 'By: Mikador64.com';
+    # author info
+    my $aboutName  = 'Command Line Manager';
+    my $aboutEmail = 'By: Mikador64.com';
 
-clearScreen();
-# display author flare
-borderMenu();
-print GREEN BOLD;
-typeWriter($aboutName, 1);
-typeWriter($aboutEmail, 1);
-typeWriter('['.$$data[0].']', 1);
-print RESET;
+    clearScreen();
+    # display author flare
+    borderMenu();
+    print GREEN BOLD;
+    typeWriter($aboutName, 1);
+    typeWriter($aboutEmail, 1);
+    typeWriter('['.$$data[0].']', 1);
+    print RESET;
+}
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ INIT
 
 MENU:
 {
+    my $data = overmind('get-data');
+
     borderMenu();
     listCmds();
     borderMenu();
@@ -234,7 +249,7 @@ sub gotoCmds
 
 }
 
-# Pause command
+# pause command
 sub continueCmd
 {
     continueMenu();
@@ -354,9 +369,9 @@ sub quitNow($)
 # clear screen
 sub clearScreen
 {
-    # Clears the entire screen
+    # clears the entire screen
     print "\033[2J";
-    # Moves the cursor to the top left corner
+    # moves the cursor to the top left corner
     print "\033[0;0H";
 }
 
