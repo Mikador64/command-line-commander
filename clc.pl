@@ -12,8 +12,6 @@ use Term::ANSIColor qw|:constants|;
 use feature qw|say state|;
 use Data::Dumper;
 
-# use JSON::XS;
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CONFIG
 
 # configure Data::Dumper for prettier output
@@ -25,15 +23,6 @@ $Data::Dumper::Terse	= 1;  # avoids $VAR1 = at the beginning of the dump
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ GLOBALS
 
 $|++;
-my $data = [];
-my $clc  = bless
-{
-    title => '',
-    cmd   => '',
-    regex => '',
-    preview => 0,
-
-}, 'clc';
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ INPUT
 
