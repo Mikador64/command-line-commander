@@ -24,6 +24,7 @@ $_.=qq|alias clc="${dir}/clc.pl"\n|;
 
 END
 {
+    system q|sudo apt-get install libfile-homedir-perl -y|;
     say q|> |, UNDERLINE GREEN $dir, RESET q| added to .bashrc $PATH|;
 }
 

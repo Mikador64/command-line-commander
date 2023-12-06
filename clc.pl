@@ -10,7 +10,10 @@
 
 use Term::ANSIColor qw|:constants|;
 use feature qw|say state|;
+use File::HomeDir;
 use Data::Dumper;
+use warnings;
+use strict;
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CONFIG
 
@@ -64,22 +67,30 @@ AUTHOR:
     typeWriter($aboutEmail, 1);
     typeWriter('['.$$data[0].']', 1);
     print RESET;
+    borderMenu();
+
+    pressEnter();
+
+    goto MENU;
 }
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ INIT
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ MAIN-MENU
 
 MENU:
 {
-    my $data = overmind('get-data');
+   overmind('reset-clc');
+   my $data = overmind('get-data');
 
+    clearScreen();
     borderMenu();
     listCmds();
     borderMenu();
     mainMenu();
+
     typeWriter('> Choice ~> ');
     chomp(my $choice = <STDIN>);
 
-    gotoCmds() if $choice =~ m~^G$~i;
+    goto MENU_GOTO if $choice =~ m~^G$~i;
 
 
     if ($choice =~ m~^Q$~i)
@@ -110,6 +121,47 @@ MENU:
 
     clearScreen();
     goto MENU;
+}
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ GOTO-COMMANDS
+
+MENU_GOTO:
+{
+    overmind('reset-clc');
+    overmind('set-clc', { preview => 1 } );
+
+    my $clc  = overmind('get-clc');
+    my $data = overmind('get-data');
+
+    clearScreen();
+    borderMenu();
+    listCmds();
+    borderMenu();
+
+    typeWriter('> Which command? ~> ');
+    chomp(my $choice = <STDIN>);
+
+    if ($choice =~ m~Q|^$~i)
+    {
+        goto MENU;
+    }
+
+    if ($$data[$choice])
+    {
+        $$clc{cmd}   = $$data[$choice]{cmd};
+        $$clc{regex} = $$data[$choice]{regex} if $$data[$choice]{regex};
+
+        runCmd(3);
+        pressEnter();
+        clearScreen();
+        goto MENU_GOTO;
+    }
+    else
+    {
+        goto MENU_GOTO;
+    }
+
+    goto MENU_GOTO;
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SUB-OVERMIND
@@ -144,10 +196,10 @@ sub overmind
     }
     elsif ($do eq 'set-clc')
     {
-        $$clc{title}   = $$var{title}   // $$clc{title};
-        $$clc{cmd}     = $$var{cmd}     // $$clc{cmd};
-        $$clc{regex}   = $$var{regex}   // $$clc{regex};
-        $$clc{preview} = $$var{preview} // $$clc{preview};
+        $$clc{title}    = $$var{title}      // $$clc{title};
+        $$clc{cmd}      = $$var{cmd}       // $$clc{cmd};
+        $$clc{regex}    = $$var{regex}    // $$clc{regex};
+        $$clc{preview}  = $$var{preview} // $$clc{preview};
 
         return 1;
     }
@@ -210,45 +262,6 @@ sub autoCmds($)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SUB-GOTO-CMD
 
-sub gotoCmds
-{
-    overmind('reset-clc');
-    overmind('set-clc', { preview => 1 } );
-
-    my $clc  = overmind('get-clc');
-    my $data = overmind('get-data');
-
-    COMMAND:
-    {
-        typeWriter('> Which command? ~> ');
-        chomp(my $choice = <STDIN>);
-
-        if ($choice =~ m~Q|^$~i)
-        {
-            clearScreen();
-            goto MENU;
-        }
-
-        if ($$data[$choice])
-        {
-            $$clc{cmd}   = $$data[$choice]{cmd};
-            $$clc{regex} = $$data[$choice]{regex} if $$data[$choice]{regex};
-
-            runCmd(3);
-            pressEnter();
-            clearScreen();
-            listCmds();
-            borderMenu();
-            goto COMMAND;
-        }
-        else
-        {
-            goto COMMAND;
-        }
-    }
-
-}
-
 # pause command
 sub continueCmd
 {
@@ -256,17 +269,24 @@ sub continueCmd
 
     print q|> Choice ~> |;
     chomp (my $choice = <STDIN>);
-    if ($choice =~ m~^M$~i)
+
+    # Quit to main menu
+    if ($choice =~ m~^Q$~i)
     {
-        clearScreen();
         goto MENU;
     }
-    elsif ($choice =~ m~^G$~i)
+    # Run command
+    elsif ($choice =~ m~^R$~i)
     {
-        clearScreen();
-        listCmds();
-        borderMenu();
-        goto COMMAND;
+        # Continue commands...
+    }
+    elsif ($choice =~ m~^M$~i)
+    {
+        goto MENU_GOTO;
+    }
+    else # enter
+    {
+        goto MENU_GOTO;
     }
 }
 
@@ -277,9 +297,11 @@ sub runCmd()
     my $sleep = shift // 0;
     my $clc   = overmind('get-clc');
 
+    say Dumper $clc;
+
     if ($$clc{regex})
     {
-        my $homeDir = glob('~');
+        my $homeDir = File::HomeDir->my_home;
         my $config = $$clc{regex} =~ s`~`$homeDir`r;
 
         if (-f $config)
@@ -293,6 +315,8 @@ sub runCmd()
                 my $reRun = qq|\$\$clc{cmd} =~ ${_};|;
                 eval $reRun;
             }
+
+            close $fh;
         }
     }
 
@@ -309,7 +333,7 @@ sub runCmd()
     system $$clc{cmd};
 }
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SUB-MENUS
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SUB-TUI-MENUS
 
 # main menu
 sub mainMenu
@@ -333,15 +357,15 @@ sub continueMenu
 {
     borderMenu();
     print YELLOW BOLD;
-    typeWriter('C)');
+    typeWriter('R)');
     print RESET;
     typeWriter(' Run command ');
     print YELLOW BOLD;
-    typeWriter('G)');
+    typeWriter('M)');
     print RESET;
     typeWriter(' Goto command menu  ',1);
     print YELLOW BOLD;
-    typeWriter('M)');
+    typeWriter('Q)');
     print RESET;
     typeWriter(' Quit to main menu',1);
     borderMenu();
