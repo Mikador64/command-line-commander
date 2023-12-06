@@ -6,6 +6,13 @@
 # email: hello-there@miker.media
 # v0.01-2023
 
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ TO-FIX
+
+=pod
+    2023-12-04
+    ~ Regex persists even if the command dosn't specify
+=cut
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ PRAGMAS
 
 use Term::ANSIColor qw|:constants|;
@@ -297,7 +304,16 @@ sub runCmd()
     my $sleep = shift // 0;
     my $clc   = overmind('get-clc');
 
-    say Dumper $clc;
+    # say Dumper $clc; # Debug
+
+    if ($$clc{cmd} =~ m~^STOP$~)
+    {
+        print YELLOW BOLD;
+        say q|> STOP command detected returing to main menu...|;
+        print RESET;
+        pressEnter();
+        goto MENU;
+    }
 
     if ($$clc{regex})
     {
