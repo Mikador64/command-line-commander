@@ -19,8 +19,8 @@ use Term::ANSIColor qw|:constants|;
 use feature qw|say state|;
 use File::HomeDir;
 use Data::Dumper;
-use warnings;
-use strict;
+# use warnings;
+# use strict;
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CONFIG
 
