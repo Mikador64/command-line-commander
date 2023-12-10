@@ -92,7 +92,23 @@ MENU:
     borderMenu();
     listCmds();
     borderMenu();
-    mainMenu();
+
+    MAIN_MENU:
+    {
+        print YELLOW BOLD;
+        typeWriter('#)');
+        print RESET;
+        typeWriter(' Automatic start at postion ',1);
+        print YELLOW BOLD;
+        typeWriter('G)');
+        print RESET;
+        typeWriter(' Goto command  ');
+        print YELLOW BOLD;
+        typeWriter('Q)');
+        print RESET;
+        typeWriter(' Quit', 1);
+        borderMenu();
+    }
 
     typeWriter('> Choice ~> ');
     chomp(my $choice = <STDIN>);
@@ -272,7 +288,23 @@ sub autoCmds($)
 # pause command
 sub continueCmd
 {
-    continueMenu();
+    CONTINUE_MENU:
+    {
+        borderMenu();
+        print YELLOW BOLD;
+        typeWriter('R)');
+        print RESET;
+        typeWriter(' Run command ');
+        print YELLOW BOLD;
+        typeWriter('M)');
+        print RESET;
+        typeWriter(' Goto command menu  ',1);
+        print YELLOW BOLD;
+        typeWriter('Q)');
+        print RESET;
+        typeWriter(' Quit to main menu',1);
+        borderMenu();
+    }
 
     print q|> Choice ~> |;
     chomp (my $choice = <STDIN>);
@@ -350,42 +382,6 @@ sub runCmd()
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SUB-TUI-MENUS
-
-# main menu
-sub mainMenu
-{
-    print YELLOW BOLD;
-    typeWriter('#)');
-    print RESET;
-    typeWriter(' Automatic start at postion ',1);
-    print YELLOW BOLD;
-    typeWriter('G)');
-    print RESET;
-    typeWriter(' Goto command  ');
-    print YELLOW BOLD;
-    typeWriter('Q)');
-    print RESET;
-    typeWriter(' Quit', 1);
-    borderMenu()
-}
-
-sub continueMenu
-{
-    borderMenu();
-    print YELLOW BOLD;
-    typeWriter('R)');
-    print RESET;
-    typeWriter(' Run command ');
-    print YELLOW BOLD;
-    typeWriter('M)');
-    print RESET;
-    typeWriter(' Goto command menu  ',1);
-    print YELLOW BOLD;
-    typeWriter('Q)');
-    print RESET;
-    typeWriter(' Quit to main menu',1);
-    borderMenu();
-}
 
 # border menu
 sub borderMenu()
