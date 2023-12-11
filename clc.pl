@@ -153,7 +153,6 @@ MENU_GOTO:
     overmind('reset-clc');
     overmind('set-clc', { preview => 1 } );
 
-    my $clc  = overmind('get-clc');
     my $data = overmind('get-data');
 
     clearScreen();
@@ -171,8 +170,8 @@ MENU_GOTO:
 
     if ($$data[$choice])
     {
-        $$clc{cmd}   = $$data[$choice]{cmd};
-        $$clc{regex} = $$data[$choice]{regex} if $$data[$choice]{regex};
+
+        overmind('set-clc', $$data[$choice] );
 
         runCmd(3);
         pressEnter();
@@ -198,6 +197,7 @@ sub overmind
     {
         title => '',
         cmd   => '',
+        stop  => 0,
         regex => '',
         preview => 0,
 
@@ -219,10 +219,12 @@ sub overmind
     }
     elsif ($do eq 'set-clc')
     {
-        $$clc{title}    = $$var{title}      // $$clc{title};
+        $$clc{title}    = $$var{title}       // $$clc{title};
+        $$clc{stop}     = $$var{stop}       // $$clc{stop};
         $$clc{cmd}      = $$var{cmd}       // $$clc{cmd};
         $$clc{regex}    = $$var{regex}    // $$clc{regex};
         $$clc{preview}  = $$var{preview} // $$clc{preview};
+
 
         return 1;
     }
@@ -236,6 +238,7 @@ sub overmind
         {
             title => '',
             cmd   => '',
+            stop  => 0,
             regex => '',
             preview => 0
         };
@@ -265,7 +268,7 @@ sub autoCmds($)
     my $data = overmind('get-data');
 
     overmind('reset-clc');
-    my $clc = overmind('get-clc');
+    # my $clc = overmind('get-clc');
 
     $start = 0 unless $start;
 
@@ -274,8 +277,7 @@ sub autoCmds($)
         next if $key == 0;
         next if $key < $start;
 
-        $$clc{cmd}   = $$data[$key]{cmd};
-        $$clc{regex} = $$data[$key]{regex} if $$data[$key]{regex};
+        overmind('set-clc', $$data[$key] );
 
         runCmd(3);
     }
@@ -336,16 +338,7 @@ sub runCmd()
     my $sleep = shift // 0;
     my $clc   = overmind('get-clc');
 
-    # say Dumper $clc; # Debug
-
-    if ($$clc{cmd} =~ m~^STOP$~)
-    {
-        print YELLOW BOLD;
-        say q|> STOP command detected returing to main menu...|;
-        print RESET;
-        pressEnter();
-        goto MENU;
-    }
+    say Dumper $clc; # Debug
 
     if ($$clc{regex})
     {
@@ -379,6 +372,15 @@ sub runCmd()
     sleep $sleep;
 
     system $$clc{cmd};
+
+    if ($$clc{stop})
+    {
+        print YELLOW BOLD;
+        say q|> STOP command detected returing to main menu...|;
+        print RESET;
+        pressEnter();
+        goto MENU;
+    }
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ SUB-TUI-MENUS
