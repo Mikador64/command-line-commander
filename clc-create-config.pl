@@ -1,11 +1,5 @@
 #!/usr/bin/env perl
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ INFO
-
-# by: mikador64.com
-# email: hello-there@miker.media
-# v0.01-2023
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ PRAGMAS
 
 use utf8;
