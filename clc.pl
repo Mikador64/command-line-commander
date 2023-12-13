@@ -10,10 +10,23 @@
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ PRAGMAS
 
 use Term::ANSIColor qw|:constants|;
+use File::HomeDir;
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ DIR-CHECK
+
+CHECK_FOLDER:
+
+my $homeDir = File::HomeDir->my_home.'/git/command-line-commander/';
+
+unless (-e $homeDir)
+{
+    print RED BOLD qq|> clc.pl needs to exist here: $homeDir\n|, RESET;
+    exit 1;
+}
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ PM
 
-use lib './';
+use lib File::HomeDir->my_home.'/git/command-line-commander/';
 require 'clc-functions.pm';
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ GLOBALS
