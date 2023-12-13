@@ -27,13 +27,13 @@ ARGS:
 unless (scalar @ARGV == 1 and -f $ARGV[0])
 {
     print RESET;
-    typeWriter('> ');
-    quitNow('No config file so quitting!');
+    CLC::typeWriter('> ');
+    CLC::quitNow('No config file so quitting!');
 }
 
 unless (CLC::overmind('eval-data',join('', <>)))
 {
-    quitNow(q|Can't create $data structure so bailing! :(|)
+    CLC::quitNow(q|Can't create $data structure so bailing! :(|)
 }
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CREDITS
